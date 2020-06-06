@@ -21,6 +21,9 @@
      "IBS-TH1",
      "homebridge"
    ],
+   "dependencies": {
+      "@abandonware/noble": "^1.9.2-9"
+   },
    "license": "GPL-3.0",
    "bugs": {
      "url": "https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/issues"
