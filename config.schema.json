@@ -1,0 +1,24 @@
+{
+   "pluginAlias": "InkbirdBtThermohumiditySensor",
+   "pluginType": "accessory",
+   "schema": {
+     "type": "object",
+     "properties": {
+         "model": {
+            "type": "string",
+            "title": "Model number (i.e. IBS-TH1, leave empty if not sure)",
+            "required": false
+         },
+         "mac_address": {
+            "type": "string",
+            "title": "Bluetooth MAC address for sensor (xx:xx:xx:xx:xx:xx). If empty first sensor to be found will be used - see log for MAC found.",
+            "required": false
+         },
+         "update_interval": {
+            "type": "number",
+            "title": "Update interval in seconds",
+            "required": false
+         }
+      }
+   }
+}
