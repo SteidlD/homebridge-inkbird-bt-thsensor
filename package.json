@@ -1,6 +1,6 @@
 {
    "name": "homebridge-inkbird-bt-thsensor",
-   "version": "0.1.0",
+   "version": "0.2.0",
    "description": "A homebridge-plugin for the Inkbird bluetooth temperature and humidity sensors.",
    "displayName": "Homebridge Inkbird temperature and humidity sensors",
    "author": "D. Steidl",
@@ -23,8 +23,8 @@
    ],
    "dependencies": {
       "@abandonware/noble": "^1.9.2-9"
-   },
-   "license": "GPL-3.0",
+    },
+    "license": "GPL-3.0",
    "bugs": {
      "url": "https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/issues"
    },
