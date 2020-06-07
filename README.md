@@ -4,6 +4,7 @@ A homebridge-plugin for the Inkbird bluetooth temperature- and humidity-sensors.
 ### Features:
 - Temperature
 - Humidity
+- Battery level
 - Supported sensors:
    - IBS-TH1
 
@@ -25,15 +26,29 @@ Note: The command requires setcap to be installed. It can be installed the follo
 ```
 "accessories": [
    {
-      "accessory"   : "InkbirdBtTHSensor",
-      "name"        : "Garden TH Sensor",
-      "plugin_map"  :
+      "accessory"       : "InkbirdBtTHSensor",
+      "plugin_map"      :
       {
-         "plugin_name" : "homebridge-inkbird-bt-thsensor"
+         "plugin_name": "homebridge-inkbird-bt-thsensor",
+         "index": 0
       },
-      "model"          : "IBS-TH1",
-      "mac_address"    : "50:51:A9:7D:FC:E9",
-      "update_interval": 300
+      "name"            : "Garden TH Sensor",
+      "model"           : "IBS-TH1",
+      "mac_address"     : "50:51:A9:7D:FC:E9",
+      "update_interval" : 300
    }
 ]
 ```
+
+- name            (required): Choose a suitable name for your sensor accessory.
+- model           (required): Choose a type from list of supported types above.
+                              If your type is not available, but you want to try if your sensor works anyway put
+                              `not in list - try it anyway`
+                              You won't get an error that the sensor is wrong and plausibility checks will be switched off.
+                              But be warned, you might get very strange values!!!
+- mac_address     (optional): Put the MAC-address of the sensor if you know it.
+                              If not, leave the value open and the plugin will choose any sensor it finds that passes the plausibility checks. In the log you will get a message like this:
+                              `7/6/2020 12:39:05 [Garden TH Sensor] Peripheral with MAC 50:51:a9:7d:fc:e9 found - stop scanning`
+                              There you have your MAC. Copy it to your configuration in this format ("xx:xx:xx:xx:xx:xx") to lock only to this sensor.
+- update_interval (optional): If you specify an update interval (in seconds) the plugin will automatically refresh the values so you have
+                              a faster response for your value. But be advised that this might reduce your batteries lifetime.
