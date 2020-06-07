@@ -44,7 +44,7 @@ Note: The command requires setcap to be installed. It can be installed the follo
 - model           (required): Choose a type from list of supported types above.
                               If your type is not available, but you want to try if your sensor works anyway put
                               `not in list - try it anyway`
-                              You won't get an error that the sensor is wrong and plausibility checks will be switched off.
+                              You won't get an error that the sensor is wrong and plausibility and CRC checks will be switched off.
                               But be warned, you might get very strange values!!!
 - mac_address     (optional): Put the MAC-address of the sensor if you know it.
                               If not, leave the value open and the plugin will choose any sensor it finds that passes the plausibility checks. In the log you will get a message like this:
