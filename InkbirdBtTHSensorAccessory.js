@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 // 04.06.2020  D.Steidl    Created
 // 06.06.2020  D.Steidl    First working version
+// 07.06.2020  D. Steidl   CRC16 Modbus, plausibility checks and easy to configure features implemented
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
@@ -16,6 +17,8 @@
 
 /** @const {Object} ESTATES               Enumeration for state machine */
 const ESTATES = {NOT_READY: 1, STATUS_INVALID: 2, SCANNING: 3, READY4ANSWER: 4}
+/** @const {Object} DDMODELS              Dictionary of models containing a dictionary with the config data of a model */
+const DDMODELS = {"IBS-TH1" : {datalength : 9, localName : "sps", serviceDat : undefined, serviceUuids : "fff0"}}
 
 //-----------------------------------------------------------------------
 // Imports
@@ -25,6 +28,7 @@ const ESTATES = {NOT_READY: 1, STATUS_INVALID: 2, SCANNING: 3, READY4ANSWER: 4}
 const noble = require('@abandonware/noble/index');
 
 // from InkbirdBtTHSensor
+const CRC16_0x18005 = require('./CRC16_0x18005')
 
 //-----------------------------------------------------------------------
 // Classes 
@@ -69,8 +73,11 @@ class cInkbirdBtTHSensorAccessory
 
       // Analyse config, use config first, if not set then fall back to default values
       self.strName               = dConfig.name;
-      self.strModel              = dConfig.model || "IBS-TH1";
-      self.strMAC                = dConfig.mac_address.toLowerCase();
+      self.strModel              = dConfig.model || "";
+      self.dSensorCfg            = DDMODELS[self.strModel];
+      if ((self.dSensorCfg == undefined) && (self.strModel != "not in list - try it anyway"))
+         self.cLog(`Invalid sensor type ${self.strModel}. See README.md for valid types!`);
+      self.strMAC                = (dConfig.mac_address || "").toLowerCase();
       self.iUpdateInt            = dConfig.update_interval;
 
       // Create services
@@ -225,20 +232,26 @@ class cInkbirdBtTHSensorAccessory
    {
       var self = this;
 
-      // Do CRC check - To be done
-      if (self.cRawStatus == undefined)
-      {
-         self.fTemperature          = undefined;
-         self.fHumidity             = undefined;
-         self.bExternalSensor       = undefined;
-         self.fBatteryLevel         = undefined;
-      }
-      else
-      {
-         self.fTemperature          = self.cRawStatus.readUIntLE(0, 2)/100;
-         self.fHumidity             = self.cRawStatus.readUIntLE(2, 2)/100;
-         self.bExternalSensor       = self.cRawStatus.readUIntLE(4, 1) == 1;
-         self.fBatteryLevel         = self.cRawStatus.readUIntLE(7, 1);
+      self.fTemperature          = undefined;
+      self.fHumidity             = undefined;
+      self.bExternalSensor       = undefined;
+      self.fBatteryLevel         = undefined;
+
+      // Check if value is present
+      if (self.cRawStatus != undefined)
+      {  // Calculate CRC16 ModBus
+         self.iCRC               = CRC16_0x18005(self.cRawStatus, 0, 4, true, true, 0xFFFF, 0x0);
+         if ((self.dSensorCfg != undefined) && (self.iCRC != self.cRawStatus.readUIntLE(5, 2)))
+         {
+            self.cLog(`CRC Error (expected ${self.iCRC.toString(16)}, found ${self.cRawStatus.readUIntLE(5, 2).toString(16)}). Ignoring data!!`)
+            return;
+         }
+
+         self.cLog(`CRC Ok (${self.iCRC.toString(16)})`)
+         self.fTemperature       = self.cRawStatus.readUIntLE(0, 2)/100;
+         self.fHumidity          = self.cRawStatus.readUIntLE(2, 2)/100;
+         self.bExternalSensor    = self.cRawStatus.readUIntLE(4, 1) == 1;
+         self.fBatteryLevel      = self.cRawStatus.readUIntLE(7, 1);
       }
       return;
    }
@@ -322,11 +335,24 @@ class cInkbirdBtTHSensorAccessory
 
             if (bDiscover)
             {  // Discover - found a BLE device
-               if ((cPeripheral.address === self.strMAC) || ((self.strMAC == undefined) && (cPeripheral.advertisement.localName == "sps")))
-               {  // If MAC-address fits, or MAC not set and peripheral with name sps found, then success
-                  // Store manufacturer data
-                  self.cRawStatus   = cPeripheral.advertisement.manufacturerData;
-                  self.cLog(`Peripheral with MAC ${cPeripheral.address} found - stop scanning`);
+               if ((cPeripheral.address === self.strMAC) || (self.strMAC == ""))
+               {  // If MAC-address fits, or MAC not set
+                  // Plausibility check
+                  if ((self.dSensorCfg == undefined) ||
+                      ((cPeripheral.advertisement.manufacturerData.length  == self.dSensorCfg.datalength) &&
+                       (cPeripheral.advertisement.localName                == self.dSensorCfg.localName) && 
+                       (cPeripheral.advertisement.serviceDat               == self.dSensorCfg.serviceDat) && 
+                       (cPeripheral.advertisement.serviceUuids             == self.dSensorCfg.serviceUuids)))
+                  {  // If type is invalid, no check possible but let it through to easily support new compatible types
+                     // Otherwise check the values for plausibility
+                     // Store manufacturer data
+                     self.cRawStatus   = cPeripheral.advertisement.manufacturerData;
+                     self.cLog(`Peripheral with MAC ${cPeripheral.address} found - stop scanning`);
+                  }
+                  else if (self.strMAC != "")
+                  {
+                     self.cLog(`Peripheral with MAC ${cPeripheral.address} found, but plausibility check failed. Expected (sps, undefined, fff0), but found (${cPeripheral.advertisement.localName}, ${JSON.stringify(cPeripheral.advertisement.serviceDat, null, 2)}, ${cPeripheral.advertisement.serviceUuids})`);
+                  }
                }
             }
 
