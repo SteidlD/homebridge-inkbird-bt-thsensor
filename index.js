@@ -6,6 +6,7 @@
 // 24.05.2020  D. Steidl   Created
 // 04.06.2020  D. Steidl   Implemented
 // 07.06.2020  D. Steidl   CRC16 Modbus implemented
+// 14.06.2020  D. Steidl   Added Eve history for temperature and relative humidity
 //-----------------------------------------------------------------------
 
 // The Inkbird bluetooth thermo-/hygrometer IBS-TH1 is a bluetooth low energy "peripheral" device. It's using the following protocol:
@@ -88,8 +89,9 @@ var strFWVersion;
 // from JavaScript
 
 // from InkbirdBtThermohumiditySensor
-const cInkbirdBtTHSensorAccessory = require('./InkbirdBtTHSensorAccessory')
-const packageJson = require('./package.json')
+const cInkbirdBtTHSensorAccessory   = require('./InkbirdBtTHSensorAccessory')
+const packageJson                   = require('./package.json')
+var   cFakeGatoHistoryService;
 
 //-----------------------------------------------------------------------
 // Classes 
@@ -107,7 +109,11 @@ const packageJson = require('./package.json')
  */
 module.exports = function (cHomebridge)
 {
-   global.strFWVersion     = packageJson.version;
+   // get version from package
+   global.strFWVersion              = packageJson.version;
+   // require here because of need to call with cHomebridge argument
+   global.cFakeGatoHistoryService   = require('fakegato-history')(cHomebridge);
+
    console.log("Homebridge API version: " + cHomebridge.version + " InkbirdBtTHSensor V" + global.strFWVersion);
 
    // Service and Characteristic are from hap-nodejs
