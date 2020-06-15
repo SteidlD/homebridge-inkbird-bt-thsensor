@@ -2,8 +2,8 @@
 A homebridge-plugin for the Inkbird bluetooth temperature- and humidity-sensors.
 
 ### Features:
-- Temperature
-- Humidity
+- Temperature (with Eve history)
+- Humidity (with Eve histor)
 - Battery level
 - Supported sensors:
    - IBS-TH1
@@ -35,7 +35,9 @@ Note: The command requires setcap to be installed. It can be installed the follo
       "name"            : "Garden TH Sensor",
       "model"           : "IBS-TH1",
       "mac_address"     : "50:51:A9:7D:FC:E9",
-      "update_interval" : 300
+      "update_interval" : 600,
+      "storage"         : "filesystem",
+      "loglevel"        : 3
    }
 ]
 ```
@@ -47,8 +49,15 @@ Note: The command requires setcap to be installed. It can be installed the follo
                               You won't get an error that the sensor is wrong and plausibility and CRC checks will be switched off.
                               But be warned, you might get very strange values!!!
 - mac_address     (optional): Put the MAC-address of the sensor if you know it.
-                              If not, leave the value open and the plugin will choose any sensor it finds that passes the plausibility checks. In the log you will get a message like this:
+                              If not, leave the value open and the plugin will choose any sensor it finds that passes the plausibility
+                              checks. In the log you will get a message like this:
                               `7/6/2020 12:39:05 [Garden TH Sensor] Peripheral with MAC 50:51:a9:7d:fc:e9 found - stop scanning`
-                              There you have your MAC. Copy it to your configuration in this format ("xx:xx:xx:xx:xx:xx") to lock only to this sensor.
+                              There you have your MAC. Copy it to your configuration in this format ("xx:xx:xx:xx:xx:xx") to lock only to
+                              this sensor.
 - update_interval (optional): If you specify an update interval (in seconds) the plugin will automatically refresh the values so you have
-                              a faster response for your value. But be advised that this might reduce your batteries lifetime.
+                              a faster response for your value. Also you need to configure this option, if you want the Eve history to be
+                              filled with values. But be advised that this might reduce your batteries lifetime, so don't choose it too
+                              short.
+- storage         (optional): Where do you want the Eve history to be stored (`filesystem` (default) or `googleDrive` (not tested)).
+- loglevel        (optional): The log level at start of the plugin - smaller numbers lead to less messages
+                              (0 = Fatal, 1 = Error, 2 = Warning, 3 = Info (default), 4 = Debug).
