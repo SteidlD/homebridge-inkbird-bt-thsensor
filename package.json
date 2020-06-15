@@ -1,7 +1,7 @@
 {
    "name": "homebridge-inkbird-bt-thsensor",
-   "version": "0.2.0",
-   "description": "A homebridge-plugin for the Inkbird bluetooth temperature and humidity sensors.",
+   "version": "0.3.0",
+   "description": "A homebridge-plugin for the Inkbird bluetooth temperature and humidity sensors with Eve history.",
    "displayName": "Homebridge Inkbird temperature and humidity sensors",
    "author": "D. Steidl",
    "main": "index.js",
@@ -18,13 +18,16 @@
      "temperature",
      "humidity",
      "sensor",
+     "Inkbird",
      "IBS-TH1",
      "homebridge"
    ],
    "dependencies": {
-      "@abandonware/noble": "^1.9.2-9"
-    },
-    "license": "GPL-3.0",
+      "@abandonware/noble": "^1.9.2-9",
+      "moment": "^2.18.1",
+      "fakegato-history": "^0.5.1"
+   },
+   "license": "GPL-3.0",
    "bugs": {
      "url": "https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/issues"
    },
