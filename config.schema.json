@@ -17,13 +17,27 @@
          },
          "mac_address": {
             "type": "string",
-            "title": "Bluetooth MAC address for sensor (xx:xx:xx:xx:xx:xx). If empty first sensor to be found will be used - see log for MAC found.",
+            "title": "Bluetooth MAC address for sensor (xx:xx:xx:xx:xx:xx). If empty, then first sensor to be found will be used - see log for MAC found.",
             "required": false
          },
          "update_interval": {
             "type": "number",
             "title": "Update interval in seconds",
+            "required": false,
+            "minimum" : 15
+         },
+         "storage": {
+            "type": "string",
+            "enum": ["filesystem", "googleDrive"],
+            "title": "Storage of history values (filesystem or googleDrive)",
             "required": false
+         },
+         "loglevel": {
+            "type": "number",
+            "title": "The log level at start - smaller number less messages (0 = Fatal, 1 = Error, 2 = Warning, 3 = Info (default), 4 = Debug)",
+            "required": false,
+            "minimum" : 0,
+            "maximum" : 4
          }
       }
    }
