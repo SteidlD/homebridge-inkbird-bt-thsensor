@@ -8,6 +8,7 @@
 // 07.06.2020  D. Steidl   CRC16 Modbus, plausibility checks and easy to configure features implemented
 // 14.06.2020  D. Steidl   Added Eve history for temperature and relative humidity, bug fix cyclic read
 // 15.06.2020  D. Steidl   Added log level
+// 16.06.2020  D. Steidl   Bugfix: Reference error Characteristic (fixed in 0.3.1)
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
@@ -95,18 +96,18 @@ class cInkbirdBtTHSensorAccessory
       // Create services and characteristics
       self.dcCustomCharacteristic.LogLevel = function ()
       {
-         Characteristic.call(this, "Log Level", global.cUUIDGen.generate("InkbirdBtTHSensorAccessory.LogLevel"));
+         cCharacteristic.call(this, "Log Level", global.cUUIDGen.generate("InkbirdBtTHSensorAccessory.LogLevel"));
          this.setProps(
          {
-            format: Characteristic.Formats.UINT8,
+            format: cCharacteristic.Formats.UINT8,
             maxValue: ELOGLEVEL.MAX,
             minValue: ELOGLEVEL.MIN,
             minStep: 1,
-            perms: [Characteristic.Perms.READ, Characteristic.Perms.WRITE, Characteristic.Perms.NOTIFY]
+            perms: [cCharacteristic.Perms.READ, cCharacteristic.Perms.WRITE, cCharacteristic.Perms.NOTIFY]
          });
          this.value = 2;
       };
-      inherits(self.dcCustomCharacteristic.LogLevel, Characteristic);
+      inherits(self.dcCustomCharacteristic.LogLevel, cCharacteristic);
 
       self.cAccessoryInfo        = new cService.AccessoryInformation();
       self.cTemperatureService   = new cService.TemperatureSensor(self.strName);
