@@ -3,7 +3,10 @@ This is the change log for the plugin, all relevant changes will be listed here.
 
 For documentation please see the [README](https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/blob/master/README.md)
 
-## 0.3.0
+### 0.3.1
+- Bugfix: Reference error Characteristic
+
+## 0.3.0 (do not use)
 - Added Eve history for temperature and relative humidity
 - Bug fix cyclic read
 - Added log level
