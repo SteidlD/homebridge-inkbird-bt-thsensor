@@ -63,7 +63,8 @@ Note: The command requires setcap to be installed. It can be installed the follo
 If you have an Inkbird Bluetooth sensor other than the IBS-TH1 please try it out using the `not in list - try it anyway` or the `IBS-TH1` setting for the model parameter. If the sensor works -> fine, if not set your log level to 4 (debug) and you'll see a
 debug message somewhat like `Debug - ManufacturerData is 9c077215005be33f08`. Try finding out the protocol by heating up / cooling down the sensor and checking which values change. You can also use the original app to compare the temperature and the ManufacturerData. The protocol of the `IBS-TH1` you find in index.js
 
-And here I'm depending on your help as I only have the `IBS-TH1`. Please let me know everything about new sensor, like:
+And here I'm depending on your help as I only have the `IBS-TH1`. Please let me know everything about new sensors, like:
 - Hey, the sensor xyz works with the `IBS-TH1` setting 
 - or... the protocol of abc seems to be the following
+
 and I will update the plugin so more people can use it. Thanks a lot
