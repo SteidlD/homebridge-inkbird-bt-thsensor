@@ -49,15 +49,21 @@ Note: The command requires setcap to be installed. It can be installed the follo
                               You won't get an error that the sensor is wrong and plausibility and CRC checks will be switched off.
                               But be warned, you might get very strange values!!!
 - mac_address     (optional): Put the MAC-address of the sensor if you know it.
-                              If not, leave the value open and the plugin will choose any sensor it finds that passes the plausibility
-                              checks. In the log you will get a message like this:
+                              If not, leave the value open and the plugin will choose any sensor it finds that passes the plausibility checks. In the log you will get a message like this:
                               `7/6/2020 12:39:05 [Garden TH Sensor] Peripheral with MAC 50:51:a9:7d:fc:e9 found - stop scanning`
-                              There you have your MAC. Copy it to your configuration in this format ("xx:xx:xx:xx:xx:xx") to lock only to
-                              this sensor.
+                              There you have your MAC. Copy it to your configuration in this format ("xx:xx:xx:xx:xx:xx") to lock only to this sensor.
 - update_interval (optional): If you specify an update interval (in seconds) the plugin will automatically refresh the values so you have
                               a faster response for your value. Also you need to configure this option, if you want the Eve history to be
-                              filled with values. But be advised that this might reduce your batteries lifetime, so don't choose it too
-                              short.
+                              filled with values. But be advised that this might reduce your batteries lifetime, so don't choose it too short.
 - storage         (optional): Where do you want the Eve history to be stored (`filesystem` (default) or `googleDrive` (not tested)).
 - loglevel        (optional): The log level at start of the plugin - smaller numbers lead to less messages
                               (0 = Fatal, 1 = Error, 2 = Warning, 3 = Info (default), 4 = Debug).
+
+### 3. New sensor types
+If you have an Inkbird Bluetooth sensor other than the IBS-TH1 please try it out using the `not in list - try it anyway` or the `IBS-TH1` setting for the model parameter. If the sensor works -> fine, if not set your log level to 4 (debug) and you'll see a
+debug message somewhat like `Debug - ManufacturerData is 9c077215005be33f08`. Try finding out the protocol by heating up / cooling down the sensor and checking which values change. You can also use the original app to compare the temperature and the ManufacturerData. The protocol of the `IBS-TH1` you find in index.js
+
+And here I'm depending on your help as I only have the `IBS-TH1`. Please let me know everything about new sensor, like:
+- Hey, the sensor xyz works with the `IBS-TH1` setting 
+- or... the protocol of abc seems to be the following
+and I will update the plugin so more people can use it. Thanks a lot
