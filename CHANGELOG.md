@@ -3,6 +3,13 @@ This is the change log for the plugin, all relevant changes will be listed here.
 
 For documentation please see the [README](https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/blob/master/README.md)
 
+## 0.4.0
+- Actualization also in cyclic mode
+- Info internal/external sensor available
+- Bugfix Issue #4: Incorrect temperature
+- Funktion "not in list - try it anyway" improved
+- Debug output for new sensors
+
 ### 0.3.1
 - Bugfix: Reference error Characteristic
 
