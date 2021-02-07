@@ -67,4 +67,4 @@ And here I'm depending on your help as I only have the `IBS-TH1`. Please let me 
 - Hey, the sensor xyz works with the `IBS-TH1` setting 
 - or... the protocol of abc seems to be the following
 
-and I will update the plugin so more people can use it. Thanks a lot
+and I will update the plugin so more people can use it. Thanks a lot 
