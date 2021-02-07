@@ -9,6 +9,8 @@
 // 14.06.2020  D. Steidl   Added Eve history for temperature and relative humidity, bug fix cyclic read
 // 15.06.2020  D. Steidl   Added log level
 // 16.06.2020  D. Steidl   Bugfix: Reference error Characteristic (fixed in 0.3.1)
+// 25.06.2020  D. Steidl   Actualization also in cyclic mode, info internal/external sensor as CustomCharacteristic
+// 07.02.2021  D. Steidl   Bugfix Issue #4: Incorrect temperature, "not in list - try it anyway" improved
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
@@ -21,7 +23,8 @@
 /** @const {Object} ESTATES               Enumeration for state machine */
 const ESTATES = {NOT_READY: 1, STATUS_INVALID: 2, SCANNING: 3, READY4ANSWER: 4}
 /** @const {Object} DDMODELS              Dictionary of models containing a dictionary with the config data of a model */
-const DDMODELS = {"IBS-TH1" : {datalength : 9, localName : "sps", serviceDat : undefined, serviceUuids : "fff0"}}
+const DDMODELS = {"IBS-TH1" : {datalength : 9, localName : "sps", serviceDat : undefined, serviceUuids : "fff0"},
+                  "not in list - try it anyway" : 0}
 /** @const {Object} ELOGLEVEL              Enumeration for log levels */
 const ELOGLEVEL = {MIN:0, FATAL: 0, ERROR: 1, WARNING: 2, INFO: 3, DEBUG: 4, MAX:4}
 /** @const {Object} STRLOGLEVEL            Strings for log levels */
@@ -88,12 +91,13 @@ class cInkbirdBtTHSensorAccessory
       self.strName               = dConfig.name;
       self.strModel              = dConfig.model || "";
       self.dSensorCfg            = DDMODELS[self.strModel];
-      if ((self.dSensorCfg == undefined) && (self.strModel != "not in list - try it anyway"))
+      if (self.dSensorCfg == undefined)
          self.Log(ELOGLEVEL.ERROR, `Invalid sensor type ${self.strModel}. See README.md for valid types!`);
       self.strMAC                = (dConfig.mac_address || "").toLowerCase();
       self.iUpdateInt            = dConfig.update_interval;
 
       // Create services and characteristics
+      // LogLevel
       self.dcCustomCharacteristic.LogLevel = function ()
       {
          cCharacteristic.call(this, "Log Level", global.cUUIDGen.generate("InkbirdBtTHSensorAccessory.LogLevel"));
@@ -108,6 +112,19 @@ class cInkbirdBtTHSensorAccessory
          this.value = 2;
       };
       inherits(self.dcCustomCharacteristic.LogLevel, cCharacteristic);
+
+      // External sensor
+      self.dcCustomCharacteristic.ExternalSensor = function ()
+      {
+         cCharacteristic.call(this, "External Sensor", global.cUUIDGen.generate("InkbirdBtTHSensorAccessory.ExternalSensor"));
+         this.setProps(
+         {
+            format: cCharacteristic.Formats.BOOL,
+            perms: [cCharacteristic.Perms.READ, cCharacteristic.Perms.NOTIFY]
+         });
+         this.value = undefined;
+      };
+      inherits(self.dcCustomCharacteristic.ExternalSensor, cCharacteristic);
 
       self.cAccessoryInfo        = new cService.AccessoryInformation();
       self.cTemperatureService   = new cService.TemperatureSensor(self.strName);
@@ -142,9 +159,25 @@ class cInkbirdBtTHSensorAccessory
       self.Log(ELOGLEVEL.DEBUG, `Start getting temperature`);
 
       // Store callback function and run statemachine
-      self.fCallbackTemperature = fCallback;
-      self.bQueryStarted = true;
+      self.fCallbackTemperature  = fCallback;
+      self.bQueryStarted         = true;
       self.RunStatemachine(false, false, undefined);
+      return;
+   }
+
+   /**
+    * Function to update the current temperature of the sensor.
+    * 
+    * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
+    * @param {boolean} fValue             Value to be set
+    * @returns {void}                     Nothing
+    */
+   updateTemperature(cError, fValue)
+   {
+      var self = this;
+
+      if (cError == null)
+         self.cTemperatureService.updateCharacteristic(global.cCharacteristic.CurrentTemperature, fValue);
       return;
    }
 
@@ -160,9 +193,59 @@ class cInkbirdBtTHSensorAccessory
       self.Log(ELOGLEVEL.DEBUG, `Start getting humidity`);
 
       // Store callback function and run statemachine
-      self.fCallbackHumidity = fCallback;
-      self.bQueryStarted = true;
+      self.fCallbackHumidity  = fCallback;
+      self.bQueryStarted      = true;
       self.RunStatemachine(false, false, undefined);
+      return;
+   }
+
+   /**
+    * Function to update the current relative humidity of the sensor.
+    * 
+    * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
+    * @param {boolean} fValue             Value to be set
+    * @returns {void}                     Nothing
+    */
+   updateHumidity(cError, fValue)
+   {
+      var self = this;
+
+      if (cError == null)
+         self.cHumidityService.updateCharacteristic(global.cCharacteristic.CurrentRelativeHumidity, fValue);
+      return;
+   }
+
+   /**
+    * Function to get the external sensor flag of the sensor.
+    * 
+    * @param {function} fCallback         Callback function pointer to give back the value once you got it
+    * @returns {void}                     Nothing (value is given back via callback function) 
+    */
+   getExternalSensor(fCallback)
+   {
+      var self = this;
+      self.Log(ELOGLEVEL.DEBUG, `Start getting external sensor flag`);
+
+      // Store callback function and run statemachine
+      self.fCallbackExtSensor = fCallback;
+      self.bQueryStarted      = true;
+      self.RunStatemachine(false, false, undefined);
+      return;
+   }
+
+   /**
+    * Function to update the external sensor flag of the sensor.
+    * 
+    * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
+    * @param {boolean} bValue             Value to be set
+    * @returns {void}                     Nothing 
+    */
+   updateExternalSensor(cError, bValue)
+   {
+      var self = this;
+
+      if (cError == null)
+         self.cTemperatureService.updateCharacteristic(self.dcCustomCharacteristic.ExternalSensor, bValue);
       return;
    }
 
@@ -179,8 +262,24 @@ class cInkbirdBtTHSensorAccessory
 
       // Store callback function and run statemachine
       self.fCallbackBatteryLevel = fCallback;
-      self.bQueryStarted = true;
+      self.bQueryStarted         = true;
       self.RunStatemachine(false, false, undefined);
+      return;
+   }
+
+   /**
+    * Function to update the battery level of the sensor.
+    * 
+    * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
+    * @param {boolean} fValue             Value to be set
+    * @returns {void}                     Nothing
+    */
+   updateBatteryLevel(cError, fValue)
+   {
+      var self = this;
+
+      if (cError == null)
+         self.cBatteryService.updateCharacteristic(global.cCharacteristic.BatteryLevel, fValue);
       return;
    }
 
@@ -196,9 +295,25 @@ class cInkbirdBtTHSensorAccessory
       self.Log(ELOGLEVEL.DEBUG, `Start getting battery low status`);
 
       // Store callback function and run statemachine
-      self.fCallbackLowBattery = fCallback;
-      self.bQueryStarted = true;
+      self.fCallbackLowBattery   = fCallback;
+      self.bQueryStarted         = true;
       self.RunStatemachine(false, false, undefined);
+      return;
+   }
+
+   /**
+    * Function to update the low battery status of the sensor.
+    * 
+    * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
+    * @param {boolean} bValue             Value to be set
+    * @returns {void}                     Nothing 
+    */
+   updateLowBatteryStatus(cError, bValue)
+   {
+      var self = this;
+
+      if (cError == null)
+         self.cBatteryService.updateCharacteristic(global.cCharacteristic.StatusLowBattery, bValue);
       return;
    }
 
@@ -258,6 +373,9 @@ class cInkbirdBtTHSensorAccessory
       self.cTemperatureService
           .getCharacteristic(global.cCharacteristic.CurrentTemperature)
           .on("get", self.getTemperature.bind(self));
+      self.cTemperatureService
+          .addCharacteristic(self.dcCustomCharacteristic.ExternalSensor)
+          .on("get", self.getExternalSensor.bind(self))
 
       //-----------------------------------------------------------
       // Humidity service
@@ -326,17 +444,18 @@ class cInkbirdBtTHSensorAccessory
       if (self.cRawStatus != undefined)
       {  // Calculate CRC16 ModBus
          self.iCRC               = CRC16_0x18005(self.cRawStatus, 0, 4, true, true, 0xFFFF, 0x0);
-         if ((self.dSensorCfg != undefined) && (self.iCRC != self.cRawStatus.readUIntLE(5, 2)))
+         if ((self.dSensorCfg != 0) && (self.iCRC != self.cRawStatus.readUIntLE(5, 2)))
          {
             self.Log(ELOGLEVEL.WARNING, `CRC Error (expected ${self.iCRC.toString(16)}, found ${self.cRawStatus.readUIntLE(5, 2).toString(16)}). Ignoring data!!`)
             return;
          }
 
-         self.Log(ELOGLEVEL.DEBUG, `CRC Ok (${self.iCRC.toString(16)})`)
-         self.fTemperature       = self.cRawStatus.readUIntLE(0, 2)/100;
+         self.fTemperature       = self.cRawStatus.readIntLE(0, 2)/100;
          self.fHumidity          = self.cRawStatus.readUIntLE(2, 2)/100;
          self.bExternalSensor    = self.cRawStatus.readUIntLE(4, 1) == 1;
          self.fBatteryLevel      = self.cRawStatus.readUIntLE(7, 1);
+         self.Log(ELOGLEVEL.DEBUG, `CRC Ok (${self.iCRC.toString(16)}), temperature ${self.fTemperature}°C, relative humidity ${self.fHumidity}%, ${self.bExternalSensor ? `external` : `internal`} sensor`);
+         self.Log(ELOGLEVEL.DEBUG, `battery level ${self.fBatteryLevel}%, battery ${self.fBatteryLevel < 10 ? `low` : `ok`}`);
 
          // Store values in for Eve history function
          self.cEveHistoryService.addEntry({ time: moment().unix(), temp: self.fTemperature, humidity: self.fHumidity, pressure: 0.0});
@@ -424,21 +543,22 @@ class cInkbirdBtTHSensorAccessory
                // Reset Status
                self.cRawStatus   = undefined;
 
-               if (bDiscover)
+               if ((bDiscover) && (self.dSensorCfg != undefined))
                {  // Discover - found a BLE device
                   if ((cPeripheral.address === self.strMAC) || (self.strMAC == ""))
                   {  // If MAC-address fits, or MAC not set
                      // Plausibility check
-                     if ((self.dSensorCfg == undefined) ||
+                     if ((self.dSensorCfg == 0) ||
                         ((cPeripheral.advertisement.manufacturerData.length  == self.dSensorCfg.datalength) &&
-                        (cPeripheral.advertisement.localName                == self.dSensorCfg.localName) && 
-                        (cPeripheral.advertisement.serviceDat               == self.dSensorCfg.serviceDat) && 
-                        (cPeripheral.advertisement.serviceUuids             == self.dSensorCfg.serviceUuids)))
+                         (cPeripheral.advertisement.localName                == self.dSensorCfg.localName) && 
+                         (cPeripheral.advertisement.serviceDat               == self.dSensorCfg.serviceDat) && 
+                         (cPeripheral.advertisement.serviceUuids             == self.dSensorCfg.serviceUuids)))
                      {  // If type is invalid, no check possible but let it through to easily support new compatible types
                         // Otherwise check the values for plausibility
                         // Store manufacturer data
                         self.cRawStatus   = cPeripheral.advertisement.manufacturerData;
                         self.Log(ELOGLEVEL.INFO, `Peripheral with MAC ${cPeripheral.address} found - stop scanning`);
+                        self.Log(ELOGLEVEL.DEBUG,`ManufacturerData is ${self.cRawStatus.toString('hex')}`);
                      }
                      else if (self.strMAC != "")
                      {
@@ -459,10 +579,18 @@ class cInkbirdBtTHSensorAccessory
                   noble.stopScanning();
                   self.stopTimeout();
 
-                  // Store manufacturer data and go to next state
+                  // Store manufacturer data, update Apple Home and set query finished 
                   self.parseStatus();
-                  self.iTimeoutId   = setInterval(self.RunStatemachine.bind(self), (self.iUpdateInt || 10) * 1000, true, false, undefined);
-                  self.eState       = ESTATES.READY4ANSWER;
+                  self.fCallbackTemperature  = self.fCallbackTemperature   || self.updateTemperature;
+                  self.fCallbackHumidity     = self.fCallbackHumidity      || self.updateHumidity;
+                  self.fCallbackExtSensor    = self.fCallbackExtSensor     || self.updateExternalSensor;
+                  self.fCallbackBatteryLevel = self.fCallbackBatteryLevel  || self.updateBatteryLevel;
+                  self.fCallbackLowBattery   = self.fCallbackLowBattery    || self.updateLowBatteryStatus;
+                  self.bQueryStarted   = false;
+
+                  // start timeout for validity of data and go to next state
+                  self.iTimeoutId      = setInterval(self.RunStatemachine.bind(self), (self.iUpdateInt || 10) * 1000, true, false, undefined);
+                  self.eState          = ESTATES.READY4ANSWER;
                }
 
                break;
@@ -502,11 +630,10 @@ class cInkbirdBtTHSensorAccessory
                   self.fCallbackLowBattery = undefined;
                }
 
-               // All callbacks done
-               self.bQueryStarted = false;            
-
-               // After valid time for value go back to invalid
-               if (bTimeout)
+               // After valid time for value or if new query started go back to invalid
+               // If we already have values from cyclic update, this bQueryStarted will lead to an extra update.
+               // In this way it's possible to get updated values even though you have the cyclic feature activated.
+               if ((bTimeout) || (self.bQueryStarted))
                   self.eState = ESTATES.STATUS_INVALID;
                break;
          }
