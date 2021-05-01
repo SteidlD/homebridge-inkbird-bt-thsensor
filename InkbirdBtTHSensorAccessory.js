@@ -11,6 +11,7 @@
 // 16.06.2020  D. Steidl   Bugfix: Reference error Characteristic (fixed in 0.3.1)
 // 25.06.2020  D. Steidl   Actualization also in cyclic mode, info internal/external sensor as CustomCharacteristic
 // 07.02.2021  D. Steidl   Bugfix Issue #4: Incorrect temperature, "not in list - try it anyway" improved
+// 01.05.2021  D. Steidl   Bugfix Issue #7: Incorrect temperature (fixed in 0.4.1)
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
@@ -372,6 +373,7 @@ class cInkbirdBtTHSensorAccessory
       //------------------------
       self.cTemperatureService
           .getCharacteristic(global.cCharacteristic.CurrentTemperature)
+          .setProps({minValue: -273.15, maxValue: 1000.0})
           .on("get", self.getTemperature.bind(self));
       self.cTemperatureService
           .addCharacteristic(self.dcCustomCharacteristic.ExternalSensor)
