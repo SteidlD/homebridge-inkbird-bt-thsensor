@@ -13,7 +13,7 @@ A homebridge-plugin for the Inkbird bluetooth temperature- and humidity-sensors.
 ### 1. Install homebridge and inkbird-bt-thsensor plugin.
 - 1.a `sudo npm install -g homebridge --unsafe-perm`
 - 1.b `sudo npm install -g homebridge-inkbird-bt-thsensor`
-- 1.c `sudo setcap cap_net_raw+eip $(eval readlink -f 'which node')`
+- 1.c `sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)`
 
 The command 1.c grants the node binary cap_net_raw privileges, so it can start/stop BLE advertising.
 Note: The command requires setcap to be installed. It can be installed the following way:
