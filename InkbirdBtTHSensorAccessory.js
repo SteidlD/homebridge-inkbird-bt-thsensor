@@ -521,9 +521,9 @@ class cInkbirdBtTHSensorAccessory
 
          if (self.bExternalSensor && self.strModel == 'IBS-TH1-Plus') {
             // CRC check is not available when external probe is used, on IBS-TH1-Plus model
+            self.fAltTemperature = self.cRawStatus.readIntLE(5, 2) / 100;
             self.Log(ELOGLEVEL.DEBUG, `CRC cannot be checked for ${self.strModel} model when external probe is connected`);
             self.Log(ELOGLEVEL.DEBUG, `CRC check skipped, internal sensor temperature ${self.fAltTemperature}°C, external probe temperature ${self.fTemperature}°C, relative humidity ${self.fHumidity}%`);
-            self.fAltTemperature = self.cRawStatus.readIntLE(5, 2) / 100;
          } else {
             self.iCRC = CRC16_0x18005(self.cRawStatus, 0, 4, true, true, 0xFFFF, 0x0);
             if ((self.dSensorCfg != 0) && (self.iCRC != self.cRawStatus.readUIntLE(5, 2)))
