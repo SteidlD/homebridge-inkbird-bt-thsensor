@@ -3,10 +3,11 @@ A homebridge-plugin for the Inkbird bluetooth temperature- and humidity-sensors.
 
 ### Features:
 - Temperature (with Eve history)
-- Humidity (with Eve histor)
+- Humidity (with Eve history)
 - Battery level
 - Supported sensors:
    - IBS-TH1
+   - IBS-TH1-Plus (with external probe)
 
 ## Installation:
 
