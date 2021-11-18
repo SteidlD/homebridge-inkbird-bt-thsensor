@@ -25,6 +25,7 @@
 const ESTATES = {NOT_READY: 1, STATUS_INVALID: 2, SCANNING: 3, READY4ANSWER: 4}
 /** @const {Object} DDMODELS              Dictionary of models containing a dictionary with the config data of a model */
 const DDMODELS = {"IBS-TH1" : {datalength : 9, localName : "sps", serviceDat : undefined, serviceUuids : "fff0"},
+                  "IBS-TH1-Plus" : {datalength : 9, localName : "sps", serviceDat : undefined, serviceUuids : "fff0"},
                   "not in list - try it anyway" : 0}
 /** @const {Object} ELOGLEVEL              Enumeration for log levels */
 const ELOGLEVEL = {MIN:0, FATAL: 0, ERROR: 1, WARNING: 2, INFO: 3, DEBUG: 4, MAX:4}
@@ -79,6 +80,7 @@ class cInkbirdBtTHSensorAccessory
       self.eOldState             = undefined;                                                      // State of the state machine in last call
       self.iTimeoutId            = undefined;                                                      // Id of a started timeout to find it again (No Timeout started yet)
       self.fCallbackTemperature  = undefined;                                                      // Callback for temperature
+      self.fCallbackAltTemp      = undefined;                                                      // Callback for alternative temperature
       self.fCallbackHumidity     = undefined;                                                      // Callback for humidity
       self.fCallbackExtSensor    = undefined;                                                      // Callback for external sensor
       self.fCallbackBatteryLevel = undefined;                                                      // Callback for battery level
@@ -127,8 +129,23 @@ class cInkbirdBtTHSensorAccessory
       };
       inherits(self.dcCustomCharacteristic.ExternalSensor, cCharacteristic);
 
+      // Internal sensor
+      self.dcCustomCharacteristic.InternalSensor = function ()
+      {
+         cCharacteristic.call(this, "Internal Sensor", global.cUUIDGen.generate("InkbirdBtTHSensorAccessory.InternalSensor"));
+         this.setProps(
+         {
+            format: cCharacteristic.Formats.BOOL,
+            perms: [cCharacteristic.Perms.READ, cCharacteristic.Perms.NOTIFY]
+         });
+         this.value = true;
+      };
+      inherits(self.dcCustomCharacteristic.InternalSensor, cCharacteristic);
+
       self.cAccessoryInfo        = new cService.AccessoryInformation();
       self.cTemperatureService   = new cService.TemperatureSensor(self.strName);
+      self.cAltTempService       = new cService.TemperatureSensor(self.strName + ' internal');
+      self.cAltTempService.subtype = 'internal';
       self.cHumidityService      = new cService.HumiditySensor(self.strName);
       self.cBatteryService       = new cService.BatteryService(self.strName);
       self.cEveHistoryService    = new cFakeGatoHistoryService("weather", this, (dConfig.storage != 'googleDrive' ? { storage: 'fs' } : { storage: 'googleDrive', path: 'homebridge' }));
@@ -167,6 +184,24 @@ class cInkbirdBtTHSensorAccessory
    }
 
    /**
+    * Function to get the current alternative temperature of the sensor.
+    *
+    * @param {function} fCallback         Callback function pointer to give back the value once you got it
+    * @returns {void}                     Nothing (value is given back via callback function)
+    */
+   getAlternativeTemperature(fCallback)
+   {
+      var self = this;
+      self.Log(ELOGLEVEL.DEBUG, `Start getting alternative temperature`);
+
+      // Store callback function and run statemachine
+      self.fCallbackAltTemp  = fCallback;
+      self.bQueryStarted         = true;
+      self.RunStatemachine(false, false, undefined);
+      return;
+   }
+
+   /**
     * Function to update the current temperature of the sensor.
     * 
     * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
@@ -179,6 +214,22 @@ class cInkbirdBtTHSensorAccessory
 
       if (cError == null)
          self.cTemperatureService.updateCharacteristic(global.cCharacteristic.CurrentTemperature, fValue);
+      return;
+   }
+
+   /**
+    * Function to update the current alternative temperature of the sensor.
+    *
+    * @param {Object} cError              Error. Not used here. Only for equivalent parameters to homebridge callback function
+    * @param {boolean} fValue             Value to be set
+    * @returns {void}                     Nothing
+    */
+   updateAlternativeTemperature(cError, fValue)
+   {
+      var self = this;
+
+      if (cError == null)
+         self.cAltTempService.updateCharacteristic(global.cCharacteristic.CurrentTemperature, fValue);
       return;
    }
 
@@ -380,6 +431,18 @@ class cInkbirdBtTHSensorAccessory
           .on("get", self.getExternalSensor.bind(self))
 
       //-----------------------------------------------------------
+      // Alternative Temperature service
+      //------------------------
+      if (self.strModel == 'IBS-TH1-Plus') {
+         self.cAltTempService
+            .getCharacteristic(global.cCharacteristic.CurrentTemperature)
+            .setProps({ minValue: -273.15, maxValue: 1000.0 })
+            .on("get", self.getAlternativeTemperature.bind(self));
+         self.cAltTempService
+            .addCharacteristic(self.dcCustomCharacteristic.InternalSensor)
+      }
+
+      //-----------------------------------------------------------
       // Humidity service
       //------------------------
       self.cHumidityService
@@ -408,8 +471,13 @@ class cInkbirdBtTHSensorAccessory
       //------------------------
       // Nothing to do
 
+      let services = [self.cAccessoryInfo, self.cTemperatureService, self.cHumidityService, self.cBatteryService, self.cEveHistoryService];
+      if (self.strModel == 'IBS-TH1-Plus') {
+         // Add alternative temperature for IBS-TH1-Plus models only
+         services.push(self.cAltTempService);
+      }
 
-      return [self.cAccessoryInfo, self.cTemperatureService, self.cHumidityService, self.cBatteryService, self.cEveHistoryService];
+      return services;
    }
 
    /**
@@ -438,6 +506,7 @@ class cInkbirdBtTHSensorAccessory
       var self = this;
 
       self.fTemperature          = undefined;
+      self.fAltTemperature       = undefined;
       self.fHumidity             = undefined;
       self.bExternalSensor       = undefined;
       self.fBatteryLevel         = undefined;
@@ -445,18 +514,25 @@ class cInkbirdBtTHSensorAccessory
       // Check if value is present
       if (self.cRawStatus != undefined)
       {  // Calculate CRC16 ModBus
-         self.iCRC               = CRC16_0x18005(self.cRawStatus, 0, 4, true, true, 0xFFFF, 0x0);
-         if ((self.dSensorCfg != 0) && (self.iCRC != self.cRawStatus.readUIntLE(5, 2)))
-         {
-            self.Log(ELOGLEVEL.WARNING, `CRC Error (expected ${self.iCRC.toString(16)}, found ${self.cRawStatus.readUIntLE(5, 2).toString(16)}). Ignoring data!!`)
-            return;
-         }
+         self.fTemperature = self.cRawStatus.readIntLE(0, 2) / 100;
+         self.fHumidity = self.cRawStatus.readUIntLE(2, 2) / 100;
+         self.bExternalSensor = self.cRawStatus.readUIntLE(4, 1) == 1;
+         self.fBatteryLevel = self.cRawStatus.readUIntLE(7, 1);
 
-         self.fTemperature       = self.cRawStatus.readIntLE(0, 2)/100;
-         self.fHumidity          = self.cRawStatus.readUIntLE(2, 2)/100;
-         self.bExternalSensor    = self.cRawStatus.readUIntLE(4, 1) == 1;
-         self.fBatteryLevel      = self.cRawStatus.readUIntLE(7, 1);
-         self.Log(ELOGLEVEL.DEBUG, `CRC Ok (${self.iCRC.toString(16)}), temperature ${self.fTemperature}°C, relative humidity ${self.fHumidity}%, ${self.bExternalSensor ? `external` : `internal`} sensor`);
+         if (self.bExternalSensor && self.strModel == 'IBS-TH1-Plus') {
+            // CRC check is not available when external probe is used, on IBS-TH1-Plus model
+            self.Log(ELOGLEVEL.DEBUG, `CRC cannot be checked for ${self.strModel} model when external probe is connected`);
+            self.Log(ELOGLEVEL.DEBUG, `CRC check skipped, internal sensor temperature ${self.fAltTemperature}°C, external probe temperature ${self.fTemperature}°C, relative humidity ${self.fHumidity}%`);
+            self.fAltTemperature = self.cRawStatus.readIntLE(5, 2) / 100;
+         } else {
+            self.iCRC = CRC16_0x18005(self.cRawStatus, 0, 4, true, true, 0xFFFF, 0x0);
+            if ((self.dSensorCfg != 0) && (self.iCRC != self.cRawStatus.readUIntLE(5, 2)))
+            {
+               self.Log(ELOGLEVEL.WARNING, `CRC Error (expected ${self.iCRC.toString(16)}, found ${self.cRawStatus.readUIntLE(5, 2).toString(16)}). Ignoring data!!`)
+               return;
+            }
+            self.Log(ELOGLEVEL.DEBUG, `CRC Ok (${self.iCRC.toString(16)}), temperature ${self.fTemperature}°C, relative humidity ${self.fHumidity}%, ${self.bExternalSensor ? `external` : `internal`} sensor`);
+         }
          self.Log(ELOGLEVEL.DEBUG, `battery level ${self.fBatteryLevel}%, battery ${self.fBatteryLevel < 10 ? `low` : `ok`}`);
 
          // Store values in for Eve history function
@@ -584,6 +660,9 @@ class cInkbirdBtTHSensorAccessory
                   // Store manufacturer data, update Apple Home and set query finished 
                   self.parseStatus();
                   self.fCallbackTemperature  = self.fCallbackTemperature   || self.updateTemperature;
+                  if (self.bExternalSensor && self.strModel == 'IBS-TH1-Plus') {
+                     self.fCallbackAltTemp = self.fCallbackAltTemp || self.updateAlternativeTemperature;
+                  }
                   self.fCallbackHumidity     = self.fCallbackHumidity      || self.updateHumidity;
                   self.fCallbackExtSensor    = self.fCallbackExtSensor     || self.updateExternalSensor;
                   self.fCallbackBatteryLevel = self.fCallbackBatteryLevel  || self.updateBatteryLevel;
@@ -606,6 +685,13 @@ class cInkbirdBtTHSensorAccessory
                   self.Log(ELOGLEVEL.INFO, `Sending temperature ${self.fTemperature}°C`);
                   self.fCallbackTemperature(null, self.fTemperature);
                   self.fCallbackTemperature = undefined;
+               }
+               if (self.fCallbackAltTemp != undefined)
+               {
+                  // Alternative Temperature callback
+                  self.Log(ELOGLEVEL.INFO, `Sending alternative temperature ${self.fAltTemperature}°C`);
+                  self.fCallbackAltTemp(null, self.fAltTemperature);
+                  self.fCallbackAltTemp = undefined;
                }
                if (self.fCallbackHumidity != undefined)
                {  // Humidity callback
