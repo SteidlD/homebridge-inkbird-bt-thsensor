@@ -7,6 +7,7 @@
 // 04.06.2020  D. Steidl   Implemented
 // 07.06.2020  D. Steidl   CRC16 Modbus implemented
 // 14.06.2020  D. Steidl   Added Eve history for temperature and relative humidity
+// 09.07.2022  D. Steidl   Alternative temperature added
 //-----------------------------------------------------------------------
 
 // The Inkbird bluetooth thermo-/hygrometer IBS-TH1 is a bluetooth low energy "peripheral" device. It's using the following protocol:
@@ -24,6 +25,7 @@
 //       o 0xhhhh (humidity in 0,01%)
 //       o 0xss   (sensor: 0x00 internal sensor, 0x01 external sensor)
 //       o 0xcccc (CRC16_MODBUS: polynomial 0x18005, initial value 0xFFFF, input and result reflected, no final xor, data: 0xtt 0xtt 0xhh 0xhh 0xss)
+//                (or alternative temperature on the Plus models)
 //       o 0xbb   (battery value in %)
 //       o 0x08   (no idea what that means - never changes)
 // - for configuration or read out of history data a BTLE connection is established
