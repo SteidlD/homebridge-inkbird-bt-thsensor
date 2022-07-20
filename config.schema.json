@@ -11,9 +11,15 @@
          },
          "model": {
             "type": "string",
-            "enum": [ "IBS-TH1", "IBS-TH1-Plus", "not in list - try it anyway" ],
+            "enum": [ "IBS-TH1", "IBS-TH1-Plus", "IBS-TH2", "IBS-TH2-Plus", "not in list - try it anyway" ],
             "title": "Model number (i.e. IBS-TH1, leave empty if not sure)",
             "required": true
+         },
+         "sensor": {
+            "type": "string",
+            "enum": [ "auto", "internal", "external" ],
+            "title": "On the supporting sensors (Plus models) the sensor to be shown can be selected (default = auto)",
+            "required": false
          },
          "mac_address": {
             "type": "string",
@@ -25,6 +31,21 @@
             "title": "Update interval in seconds",
             "required": false,
             "minimum" : 15
+         },
+         "offset_int_temperature": {
+            "type": "number",
+            "title": "Offset of the internal temperature sensor in 0.01°C",
+            "required": false
+         },
+         "offset_ext_temperature": {
+            "type": "number",
+            "title": "Offset of the external temperature sensor in 0.01°C",
+            "required": false
+         },
+         "offset_int_humidity": {
+            "type": "number",
+            "title": "Offset of the internal humidity sensor in 0.01%",
+            "required": false
          },
          "storage": {
             "type": "string",
