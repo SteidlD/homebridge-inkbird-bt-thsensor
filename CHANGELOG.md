@@ -3,6 +3,12 @@ This is the change log for the plugin, all relevant changes will be listed here.
 
 For documentation please see the [README](https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/blob/master/README.md)
 
+## 0.5.0
+- Support for sensor types IBS-TH2 and IBS-TH2-Plus added
+- Selection of internal or external sensor
+- Offset for internal, external temperature sensor added
+- Offset for internal humidity added
+
 ### 0.4.2
 - Support for IBS-TH1-Plus
 
