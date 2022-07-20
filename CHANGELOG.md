@@ -3,6 +3,9 @@ This is the change log for the plugin, all relevant changes will be listed here.
 
 For documentation please see the [README](https://github.com/SteidlD/homebridge-inkbird-bt-thsensor/blob/master/README.md)
 
+### 0.4.2
+- Support for IBS-TH1-Plus
+
 ### 0.4.1
 - Bugfix Issue #7: Incorrect temperature (problem with negative temperatures)
 
