@@ -1,6 +1,6 @@
 {
    "name": "homebridge-inkbird-bt-thsensor",
-   "version": "0.4.2",
+   "version": "0.5.0",
    "description": "A homebridge-plugin for the Inkbird bluetooth temperature and humidity sensors with Eve history.",
    "displayName": "Homebridge Inkbird temperature and humidity sensors",
    "author": "D. Steidl",
@@ -20,6 +20,9 @@
      "sensor",
      "Inkbird",
      "IBS-TH1",
+     "IBS-TH1-Plus",
+     "IBS-TH2",
+     "IBS-TH2-Plus",
      "homebridge"
    ],
    "dependencies": {
